@@ -7,8 +7,6 @@ import tensorflow as tf
 import time
 from data_util_nbv import lmdb_dataflow, get_queued_data
 from termcolor import colored
-from tf_util import add_train_summary
-from visu_util import plot_pcd_three_views
 import pdb
 from tensorpack import dataflow
 from scipy import stats
@@ -24,7 +22,7 @@ def train(args):
     npts_pl = tf.placeholder(tf.int32, (args.batch_size,), 'num_points') 
     gt_pl = tf.placeholder(tf.float32, (args.batch_size, args.num_gt_points, 3), 'ground_truths') # ground truth
     view_state_pl = tf.placeholder(tf.float32, (args.batch_size, args.views), 'view_state') # view space selected state
-    eval_value_pl = tf.placeholder(tf.float32, (args.batch_size, args.views, 1), 'eval_value') # surface cov, 
+    eval_value_pl = tf.placeholder(tf.float32, (args.batch_size, args.views, 1), 'eval_value') # surface coverage
 
     model_module = importlib.import_module('.%s' % args.model_type, 'models')
     model = model_module.Model(inputs_pl, npts_pl, gt_pl, view_state_pl, eval_value_pl, is_training = is_training_pl)
@@ -34,23 +32,13 @@ def train(args):
                                                    args.lr_decay_steps, args.lr_decay_rate,
                                                    staircase=True, name='lr')
         learning_rate = tf.maximum(learning_rate, args.lr_clip)
-        add_train_summary('learning_rate', learning_rate)
     else:
         learning_rate = tf.constant(args.base_lr, name='lr')
-    train_summary = tf.summary.merge_all('train_summary')
-    valid_summary = tf.summary.merge_all('valid_summary')
-
-    train_vars_pcn = tf.trainable_variables(scope='pcn')
-    train_vars_nbv = tf.trainable_variables(scope='nbv')
 
     trainer = tf.train.AdamOptimizer(learning_rate)
-    # loss_final = model.loss_pcn + model.loss_nbv
-    # loss_final = model.pcn_l2 + model.loss_nbv
-    # loss_final = model.loss_pcn
     loss_final = model.loss_nbv
 
     train_op = trainer.minimize(loss_final, global_step)
-    # train_op = trainer.minimize(loss_final, global_step, var_list = train_vars_nbv)
 
     df_train, num_train = lmdb_dataflow(
         args.lmdb_train, args.batch_size, args.num_input_points, args.num_gt_points, is_training=True)
@@ -77,13 +65,7 @@ def train(args):
     with open(os.path.join(args.log_dir, 'args.txt'), 'w') as log:
         for arg in sorted(vars(args)):
             log.write(arg + ': ' + str(getattr(args, arg)) + '\n')     # log of arguments
-    os.system('cp models/%s.py %s' % (args.model_type, args.log_dir))  # bkp of model def
-    os.system('cp train_NBV_shapenet.py %s' % args.log_dir)                  # bkp of train procedure
-    writer = tf.summary.FileWriter(args.log_dir, sess.graph)
-
-    if args.restore:
-        saver_restore = tf.train.Saver(var_list = train_vars_pcn)
-        saver_restore.restore(sess, args.checkpoint)
+    os.system('cp models/%s.py %s' % (args.model_type, args.log_dir))  # backup of model definition
 
     csv_file = open(os.path.join(args.log_dir, 'loss.csv'), 'a+')
     csv_writer = csv.writer(csv_file)
@@ -93,15 +75,14 @@ def train(args):
     total_time = 0
     train_start = time.time()
     init_step = sess.run(global_step)
-    for step in range(init_step+1, args.max_step+1):
+    for step in range(init_step + 1, args.max_step + 1):
         epoch = step * args.batch_size // num_train + 1
         ids, inputs, npts, gt, view_state, eval_value = next(train_gen)
         start = time.time()
         feed_dict = {inputs_pl: inputs, npts_pl: npts, gt_pl: gt, view_state_pl:view_state, 
             eval_value_pl:eval_value[:, :, :1], is_training_pl: True}
-        _, loss, loss_eval, summary, eval_value_pre = sess.run([train_op, model.loss, model.loss_eval, train_summary, model.eval_value], feed_dict=feed_dict)
+        _, loss, loss_eval, eval_value_pre = sess.run([train_op, model.loss, model.loss_eval, model.eval_value], feed_dict=feed_dict)
         total_time += time.time() - start
-        writer.add_summary(summary, step)
         if step % args.steps_per_print == 0:
 
             spearmanr_total = 0
@@ -115,7 +96,6 @@ def train(args):
         if step % args.steps_per_eval == 0:
             print(colored('Testing...', 'grey', 'on_green'))
             num_eval_steps = num_valid // args.batch_size
-            # num_eval_steps = 10
             valid_total_loss = 0
             valid_total_loss_eval = 0
             valid_total_time = 0
@@ -127,7 +107,7 @@ def train(args):
 
                 feed_dict = {inputs_pl: inputs, npts_pl: npts, gt_pl: gt, view_state_pl:view_state, 
                     eval_value_pl:eval_value[:, :, :1], is_training_pl: False}
-                valid_loss, valid_loss_eval, _, valid_eval_value_pre = sess.run([model.loss, model.loss_eval, model.update, model.eval_value], feed_dict=feed_dict)
+                valid_loss, valid_loss_eval, valid_eval_value_pre = sess.run([model.loss, model.loss_eval, model.eval_value], feed_dict=feed_dict)
             
                 valid_spearmanr_batch_total = 0
                 for j in range(args.batch_size):
@@ -138,8 +118,7 @@ def train(args):
                 valid_total_loss_eval += valid_loss_eval
                 valid_total_spearmanr += valid_spearmanr
                 valid_total_time += time.time() - start
-            summary = sess.run(valid_summary, feed_dict={is_training_pl: False})
-            writer.add_summary(summary, step)
+
             print(colored('epoch %d  step %d  loss %.8f loss_eval %.8f spearmanr %.8f - time per batch %.4f' %
                           (epoch, step, valid_total_loss / num_eval_steps, valid_total_loss_eval / num_eval_steps,
                              valid_total_spearmanr / num_eval_steps, valid_total_time / num_eval_steps),
@@ -149,13 +128,7 @@ def train(args):
                 valid_total_loss / num_eval_steps, valid_total_loss_eval / num_eval_steps, valid_total_spearmanr / num_eval_steps,])
 
             valid_total_time = 0
-        if step % args.steps_per_visu == 0:
-            all_pcds = sess.run(model.visualize_ops, feed_dict=feed_dict)
-            for i in range(0, args.batch_size, args.visu_freq):
-                plot_path = os.path.join(args.log_dir, 'plots',
-                                        'epoch_%d_step_%d_%s.png' % (epoch, step, ids[i]))
-                pcds = [x[i] for x in all_pcds]
-                plot_pcd_three_views(plot_path, pcds, model.visualize_titles)
+
         if step % args.steps_per_save == 0:
             saver.save(sess, os.path.join(args.log_dir, 'model'), step)
             print(colored('Model saved at %s' % args.log_dir, 'white', 'on_blue'))
@@ -168,11 +141,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--lmdb_train', default='/home/zengrui/IROS/pcn/NBV_data/shapenet_33_views/train.lmdb')
     parser.add_argument('--lmdb_valid', default='/home/zengrui/IROS/pcn/NBV_data/shapenet_33_views/valid.lmdb')
-    parser.add_argument('--log_dir', default='log/4_9_1')
+    parser.add_argument('--log_dir', default='log/7_11_1')
     parser.add_argument('--model_type', default='pc-nbv')
-    parser.add_argument('--restore', action='store_true')
-    parser.add_argument('--checkpoint', default='log_shapenet/2_3_3_onlypcn/model-30000')
-    # parser.add_argument('--train_nbv', action='store_true')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--num_input_points', type=int, default=512)
     parser.add_argument('--num_gt_points', type=int, default=1024)
@@ -184,10 +154,8 @@ if __name__ == '__main__':
     parser.add_argument('--lr_clip', type=float, default=1e-6)
     parser.add_argument('--max_step', type=int, default=400000)
     parser.add_argument('--steps_per_print', type=int, default=100)
-    parser.add_argument('--steps_per_eval', type=int, default=2500)
-    parser.add_argument('--steps_per_visu', type=int, default=2500)
+    parser.add_argument('--steps_per_eval', type=int, default=1000)
     parser.add_argument('--steps_per_save', type=int, default=5000)
-    parser.add_argument('--visu_freq', type=int, default=5)
     parser.add_argument('--gpu', default='2')
 
     args = parser.parse_args()
