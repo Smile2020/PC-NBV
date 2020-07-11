@@ -36,7 +36,7 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
 4. Evaluate the model:
    To test your trained model, you can run:
    ```shell
-   python pu_gan.py --checkpoint model_path
+   python test.py --checkpoint model_path
    ```
 
 ### Questions
