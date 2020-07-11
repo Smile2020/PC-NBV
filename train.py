@@ -139,8 +139,8 @@ def train(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lmdb_train', default='/home/zengrui/IROS/pcn/NBV_data/shapenet_33_views/train.lmdb')
-    parser.add_argument('--lmdb_valid', default='/home/zengrui/IROS/pcn/NBV_data/shapenet_33_views/valid.lmdb')
+    parser.add_argument('--lmdb_train', default='data/train.lmdb')
+    parser.add_argument('--lmdb_valid', default='data/valid.lmdb')
     parser.add_argument('--log_dir', default='log/7_11_1')
     parser.add_argument('--model_type', default='pc-nbv')
     parser.add_argument('--batch_size', type=int, default=32)
