@@ -27,7 +27,9 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
    Follow the above information to compile the TF operators. 
    
 3. Generate the data:
-   you can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data`.
+
+    First you have to generate networks' inputs and supervision data  and sample complete point cloud data from your model datasets.
+    you can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data/train`.
 
 4. Train the model:
    ```shell
