@@ -24,6 +24,7 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
    ```
    
 2. Compile the TF operators:
+
    Follow the above information to compile the TF operators. 
    
 3. Generate the data:
@@ -36,6 +37,7 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
    ```
 
 5. Evaluate the model:
+
    To test your trained model, you can run:
    ```shell
    python test.py --checkpoint model_path
