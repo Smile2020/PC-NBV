@@ -26,14 +26,16 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
 2. Compile the TF operators
    Follow the above information to compile the TF operators. 
    
-3. Train the model:
-    First, you need to download the training and validation data from [GoogleDrive](waiting for upload) and put it in folder `data`.
-    Then run:
+3. generate the data
+   you can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data`.
+
+4. Train the model:
+   Run:
    ```shell
    python train.py 
    ```
 
-4. Evaluate the model:
+5. Evaluate the model:
    To test your trained model, you can run:
    ```shell
    python test.py --checkpoint model_path

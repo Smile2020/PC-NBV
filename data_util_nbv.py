@@ -69,9 +69,6 @@ class BatchData(dataflow.ProxyDataFlow):
         view_states = np.stack([x[3] for x in data_holder])
         target_values = np.stack([x[4] for x in data_holder])
 
-        # ids, inputs, npts, gts, view_states, target_values = [0, 0, 0, 0, 0, 0]
-
-
         return ids, inputs, npts, gts, view_states, target_values
 
 
