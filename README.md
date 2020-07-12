@@ -28,8 +28,7 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
    
 3. Generate the data:
 
-    First you have to generate networks' inputs and supervision data  and sample complete point cloud data from your model datasets.
-    you can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data/train`.
+    First you have to generate networks' inputs and supervision data  and sample complete point cloud data from your model datasets. You can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data`.
 
 4. Train the model:
    ```shell
