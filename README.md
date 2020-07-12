@@ -23,14 +23,13 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
    cd PC-NBV
    ```
    
-2. Compile the TF operators
+2. Compile the TF operators:
    Follow the above information to compile the TF operators. 
    
-3. generate the data
+3. Generate the data:
    you can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data`.
 
 4. Train the model:
-   Run:
    ```shell
    python train.py 
    ```
