@@ -29,7 +29,9 @@ When running the code, if you have `undefined symbol: _ZTIN10tensorflow8OpKernel
    
 3. Generate the data:
 
-    First you have to generate networks' inputs and supervision data  and sample complete point cloud data from your model datasets. You can use lmdb_write_shapenet.py to make lmdb data and put them in folder `data`.
+   To generate your own data from ShapeNet, first Download [ShapeNetCore.v1](https://shapenet.org). Then, create partial point clouds from depth images (see instructions in `render`) and corresponding ground truths by sampling from CAD models ([sample code](https://github.com/hexygen/sample_mesh)). 
+
+   You can generate networks' inputs and supervision npy data using generate_nbv_data.py, then use lmdb_write_shapenet.py to make lmdb data.
 
 4. Train the model:
    ```shell
